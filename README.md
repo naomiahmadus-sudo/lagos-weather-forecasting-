@@ -48,7 +48,7 @@ Temperature is smooth and seasonal and therefore forecastable; precipitation is 
 
 ## Files
 
-- [`lagos_forecast_writeup.md`](lagos_forecast_writeup.md) 
+- [`lagos_forecast_writeup.md`](writeup.md) 
 - [`horizon_chart_styled.png`](horizon_chart_styled.png) 
 - [`make_chart.py`](make_chart.py) 
 - [`notebook.ipynb`](Air_Quality.ipynb) 
