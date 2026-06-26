@@ -1,0 +1,59 @@
+# Forecasting Lagos Temperature: When a Learned Model Beats a Naive Baseline
+
+**A time-series forecasting project on ten years of open weather data, examining how forecast accuracy depends on horizon, and where machine learning earns its place over a simple persistence rule.**
+
+## Motivation
+
+Weather conditions, especially the onset of the rainy season, the swings in temperature, humidity, and pressure, have real effects on daily life and health in Lagos. For people whose wellbeing is sensitive to weather, knowing what conditions are coming is genuinely useful. This project forecasts environmental conditions (temperature as the primary target), motivated by that sensitivity. It is a weather model, not a health model: it predicts the weather, and the personal context explains why predicting weather matters.
+
+## Research Question
+
+Can daily temperature in Lagos be forecast from its own recent history and seasonal signals, and does a learned model outperform a naive persistence baseline? If so, under what conditions?
+
+## Data
+
+Ten years of hourly weather (2015 to 2024) for Lagos were pulled from the Open-Meteo historical archive API, which is free, open, and requires no key. The data arrived complete with no missing values across temperature, humidity, precipitation, surface pressure, and wind. Hourly readings were aggregated to daily averages, giving roughly 3,650 daily records.
+
+Open-Meteo's frictionless access is worth noting: unlike many social and commercial data sources, it imposes no scraping, no approval gate, and no rate-limit fragility, which let the work focus entirely on the modeling.
+
+## Method
+
+**Feature engineering.** Because the task is to predict the future from the past, predictive features were engineered from prior values: lagged temperatures (1, 2, and 7 days back), a 7-day rolling average, and calendar features (month and day of year) to capture seasonality. The target is the temperature a set number of days ahead.
+
+**Time-based split.** Critically, the data was split by time, not randomly. The model trains on 2015 to 2022 and is tested on 2023 to 2024, data that falls chronologically after everything it learned from. This mirrors real deployment, where only the past is available to predict the future, and avoids the data leakage that a random split would introduce.
+
+**Baseline and model.** A persistence baseline (predict that the future value equals today's) was measured first, then a Random Forest regressor trained on the engineered features. Performance was measured with mean absolute error (MAE) in degrees Celsius.
+
+## Results
+
+The central finding concerns how the two approaches behave as the forecast horizon grows.
+
+At a 1-day horizon, the persistence baseline is very strong (MAE 0.43 C), reflecting Lagos's low day-to-day temperature variation. The Random Forest does not beat it at this horizon (MAE 0.47 C). When the next day is almost always close to today, the naive rule is hard to improve on.
+
+As the horizon extends, the picture reverses. Persistence degrades steadily, because today becomes a progressively worse predictor of conditions further out. The learned model degrades far less, because it relies on season and trend rather than today's value alone.
+
+| Horizon | Baseline MAE | Model MAE |
+|---|---|---|
+| 1 day | 0.43 | 0.47 |
+| 3 days | 0.54 | 0.51 |
+| 7 days | 0.60 | 0.55 |
+| 14 days | 0.67 | 0.55 |
+| 21 days | 0.73 | 0.56 |
+
+By 21 days, the baseline error has climbed to 0.73 C while the model holds near 0.56 C. The model line stays nearly flat across the full range, while the baseline rises continuously. The advantage of a learned model is therefore not constant: it is negligible at short range and grows with every additional day of horizon.
+
+## Live Tool
+
+The trained model was connected to Open-Meteo's live forecast endpoint to produce real forward forecasts. It pulls recent actual conditions, rebuilds the same features used in training, and outputs a next-day temperature prediction. In a test run during the Lagos rainy season, it forecast a value in the mid-20s Celsius, consistent with seasonal expectations, confirming the pipeline works end to end on live data.
+
+## Limitations
+
+Temperature was the primary target because it is smooth and seasonal. Precipitation, by contrast, is spiky and far harder to predict day to day, and is noted here as the genuine frontier rather than claimed as solved. The model is a single Random Forest with a modest feature set; more sophisticated time-series methods (gradient boosting, or sequence models) could be compared. The test period is two years; longer evaluation would tighten the estimates.
+
+## Future Work
+
+Extend to multi-variable forecasting (humidity and pressure alongside temperature), attempt precipitation with methods suited to its spiky distribution, compare additional model families across the horizon curve, and develop the live tool into a small standalone forecasting dashboard.
+
+## Summary
+
+Using ten years of open weather data, this project shows that daily Lagos temperature is forecastable, that a naive persistence baseline is surprisingly strong at short horizons, and that a learned model's advantage emerges and widens as the forecast horizon grows, from a slight disadvantage at 1 day to a clear improvement at 3 weeks. The result is demonstrated with a time-based evaluation and deployed as a working live forecast.
